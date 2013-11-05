@@ -1,0 +1,1 @@
+call "msvc.bat" vc10 win32 Debug
