@@ -248,6 +248,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\DrawUtil.cpp" />
     <ClCompile Include="..\..\..\src\ISession_Direction.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -289,6 +290,7 @@
     <ClCompile Include="..\..\..\..\Common\Winmain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\DrawUtil.h" />
     <ClInclude Include="..\..\..\src\ISession_Direction.h" />
     <ClInclude Include="..\..\..\src\ModelingApp.h" />
     <ClInclude Include="..\..\..\src\ModelingDoc.h" />
