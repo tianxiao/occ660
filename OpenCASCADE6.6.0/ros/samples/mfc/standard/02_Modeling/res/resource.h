@@ -58,6 +58,7 @@
 #define ID_FILLWITHTANG                 870
 #define ID_BUTTON871                    871
 #define ID_BUTTON_FILL                  871
+#define ID_BUTTON872                    872
 #define ID_STOP_STOP                    32901
 
 // Next default values for new objects
@@ -66,7 +67,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        133
-#define _APS_NEXT_COMMAND_VALUE         872
+#define _APS_NEXT_COMMAND_VALUE         873
 #define _APS_NEXT_CONTROL_VALUE         1002
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

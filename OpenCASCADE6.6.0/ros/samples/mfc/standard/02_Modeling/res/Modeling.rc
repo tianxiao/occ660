@@ -13,13 +13,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -70,7 +68,7 @@ IDR_FRAME2              BITMAP                  "fram2.bmp"
 // Toolbar
 //
 
-IDR_MAINFRAME TOOLBAR  20, 20
+IDR_MAINFRAME TOOLBAR 20, 20
 BEGIN
     BUTTON      ID_FILE_NEW
     SEPARATOR
@@ -107,7 +105,7 @@ BEGIN
     BUTTON      ID_APP_ABOUT
 END
 
-IDR_FRAME2 TOOLBAR  20, 20
+IDR_FRAME2 TOOLBAR 20, 20
 BEGIN
     BUTTON      ID_PRISM_LOCAL
     BUTTON      ID_DPRISM_LOCAL
@@ -137,6 +135,7 @@ BEGIN
     SEPARATOR
     BUTTON      ID_FILLWITHTANG
     BUTTON      ID_BUTTON_FILL
+    BUTTON      ID_BUTTON872
 END
 
 
@@ -145,7 +144,7 @@ END
 // Menu
 //
 
-IDR_MAINFRAME MENU 
+IDR_MAINFRAME MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -164,7 +163,7 @@ BEGIN
     END
 END
 
-IDR_3DTYPE MENU 
+IDR_3DTYPE MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -191,7 +190,7 @@ BEGIN
     END
 END
 
-IDR_Popup3D MENU 
+IDR_Popup3D MENU
 BEGIN
     POPUP "BackGround"
     BEGIN
@@ -280,13 +279,13 @@ END
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDR_MAINFRAME           "TopologyTransformations"
     IDR_3DTYPE              "\nViewer\n\n\n\n.Document\n Document"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_BOX                  "Make a box\nBox"
     ID_Cylinder             "Make a cylinder\nCylinder"
@@ -303,7 +302,7 @@ BEGIN
     ID_BUTTON815            "Mirror\nMirror"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_MIRROR               "Transform a shape by a point Mirror\nMirror Point"
     ID_MIRRORAXIS           "Transform a shape by an axis Mirror\nMirror Axis"
@@ -314,7 +313,7 @@ BEGIN
     ID_DEFORM               "Apply a  geometric transformation\nDeform"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_CUT                  "Cut a solid by an other\nCut"
     ID_FUSE                 "Fuse two solids\nFuse two solids"
@@ -328,7 +327,7 @@ BEGIN
     ID_DPRISM_LOCAL         "Make a local prism with draft angle\nDraft angle"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_REVOL_LOCAL          "Make a local revolution shape\nRevol"
     ID_Pipe_LOCAL           "Make a local  pipe\nPipe"
@@ -347,7 +346,7 @@ BEGIN
     ID_BUILDER              "Create a shape with a builder\nBuilder"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_GEOMETRIE            "Tools to recover the geometrie\nTools"
     ID_EXPLORER             "Explode a shape in faces\nExplorer"
@@ -359,7 +358,7 @@ BEGIN
     ID_BUTTON_FILL          "Fill  a hole between patches\nFilling hole"
 END
 
-#endif    // English (U.S.) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

@@ -82,6 +82,7 @@ BEGIN_MESSAGE_MAP(CModelingDoc, OCC_3dBaseDoc)
 	ON_COMMAND(ID_STOP_STOP, OnStopStop)
 	ON_COMMAND(ID_FILLWITHTANG, OnFillwithtang)
 	//}}AFX_MSG_MAP
+	ON_COMMAND(ID_BUTTON872, &CModelingDoc::OnBuildImprint)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -5070,4 +5071,543 @@ void CModelingDoc::Popup(const Standard_Integer  x,
   ClientToScreen ( (HWND)(aWNTWindow->HWindow()),&winCoord);
   pPopup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON , winCoord.x, winCoord.y , 
                          AfxGetMainWnd());
+}
+
+
+void CModelingDoc::OnBuildImprint()
+{
+	AIS_ListOfInteractive aList;
+	myAISContext->DisplayedObjects(aList);
+	AIS_ListIteratorOfListOfInteractive aListIterator;
+	for(aListIterator.Initialize(aList);aListIterator.More();aListIterator.Next()){
+		myAISContext->Remove(aListIterator.Value());
+	}
+
+	//The tolerance is the tolerance of confusion
+	Standard_Real precision = Precision::Confusion();
+
+	//The builder
+	BRep_Builder B;
+
+	//Build the vertices
+	TopoDS_Vertex V000, V001, V010, V011, V100, V101, V110, V111;
+	B.MakeVertex(V000,gp_Pnt(0,0,0),precision);
+	B.MakeVertex(V001,gp_Pnt(0,0,100),precision);
+	B.MakeVertex(V010,gp_Pnt(0,150,0),precision);
+	B.MakeVertex(V011,gp_Pnt(0,150,100),precision);
+	B.MakeVertex(V100,gp_Pnt(200,0,0),precision);
+	B.MakeVertex(V101,gp_Pnt(200,0,100),precision);
+	B.MakeVertex(V110,gp_Pnt(200,150,0),precision);
+	B.MakeVertex(V111,gp_Pnt(200,150,100),precision);
+
+	//Build the edges
+	//the edges are oriented as the axis X,Y,Z
+	TopoDS_Edge EX00, EX01, EX10, EX11;
+	TopoDS_Edge EY00, EY01, EY10, EY11;
+	TopoDS_Edge EZ00, EZ01, EZ10, EZ11;
+	Handle (Geom_Line) L;
+
+	//Edge X00
+	L = new Geom_Line(gp_Pnt(0,0,0),gp_Dir(1,0,0));
+	B.MakeEdge(EX00,L,precision);
+	V000.Orientation(TopAbs_FORWARD);
+	V100.Orientation(TopAbs_REVERSED);
+	B.Add(EX00,V000);
+	B.Add(EX00,V100);
+	//Parameters
+	B.UpdateVertex(V000,0,EX00,precision);
+	B.UpdateVertex(V100,200,EX00,precision);
+
+	//Edge X10
+	L = new Geom_Line(gp_Pnt(0,150,0),gp_Dir(1,0,0));
+	B.MakeEdge(EX10,L,precision);
+	V010.Orientation(TopAbs_FORWARD);
+	V110.Orientation(TopAbs_REVERSED);
+	B.Add(EX10,V010);
+	B.Add(EX10,V110);
+	//Parameters
+	B.UpdateVertex(V010,0,EX10,precision);
+	B.UpdateVertex(V110,200,EX10,precision);
+
+	//Edge Y00
+	L = new Geom_Line(gp_Pnt(0,0,0),gp_Dir(0,1,0));
+	B.MakeEdge(EY00,L,precision);
+	V000.Orientation(TopAbs_FORWARD);
+	V010.Orientation(TopAbs_REVERSED);
+	B.Add(EY00,V000);
+	B.Add(EY00,V010);
+	//Parameters
+	B.UpdateVertex(V000,0,EY00,precision);
+	B.UpdateVertex(V010,150,EY00,precision);
+
+	//Edge Y10
+	L = new Geom_Line(gp_Pnt(200,0,0),gp_Dir(0,1,0));
+	B.MakeEdge(EY10,L,precision);
+	V100.Orientation(TopAbs_FORWARD);
+	V110.Orientation(TopAbs_REVERSED);
+	B.Add(EY10,V100);
+	B.Add(EY10,V110);
+	//Parameters
+	B.UpdateVertex(V100,0,EY10,precision);
+	B.UpdateVertex(V110,150,EY10,precision);
+
+	//Edge Y01
+	L = new Geom_Line(gp_Pnt(0,0,100),gp_Dir(0,1,0));
+	B.MakeEdge(EY01,L,precision);
+	V001.Orientation(TopAbs_FORWARD);
+	V011.Orientation(TopAbs_REVERSED);
+	B.Add(EY01,V001);
+	B.Add(EY01,V011);
+	//Parameters
+	B.UpdateVertex(V001,0,EY01,precision);
+	B.UpdateVertex(V011,150,EY01,precision);
+
+	//Edge Y11
+	L = new Geom_Line(gp_Pnt(200,0,100),gp_Dir(0,1,0));
+	B.MakeEdge(EY11,L,precision);
+	V101.Orientation(TopAbs_FORWARD);
+	V111.Orientation(TopAbs_REVERSED);
+	B.Add(EY11,V101);
+	B.Add(EY11,V111);
+	//Parameters
+	B.UpdateVertex(V101,0,EY11,precision);
+	B.UpdateVertex(V111,150,EY11,precision);
+
+	//Edge Z00
+	L = new Geom_Line(gp_Pnt(0,0,0),gp_Dir(0,0,1));
+	B.MakeEdge(EZ00,L,precision);
+	V000.Orientation(TopAbs_FORWARD);
+	V001.Orientation(TopAbs_REVERSED);
+	B.Add(EZ00,V000);
+	B.Add(EZ00,V001);
+	//Parameters
+	B.UpdateVertex(V000,0,EZ00,precision);
+	B.UpdateVertex(V001,100,EZ00,precision);
+
+	//Edge Z01
+	L = new Geom_Line(gp_Pnt(0,150,0),gp_Dir(0,0,1));
+	B.MakeEdge(EZ01,L,precision);
+	V010.Orientation(TopAbs_FORWARD);
+	V011.Orientation(TopAbs_REVERSED);
+	B.Add(EZ01,V010);
+	B.Add(EZ01,V011);
+	//Parameters
+	B.UpdateVertex(V010,0,EZ01,precision);
+	B.UpdateVertex(V011,100,EZ01,precision);
+
+	//Edge Z10
+	L = new Geom_Line(gp_Pnt(200,0,0),gp_Dir(0,0,1));
+	B.MakeEdge(EZ10,L,precision);
+	V100.Orientation(TopAbs_FORWARD);
+	V101.Orientation(TopAbs_REVERSED);
+	B.Add(EZ10,V100);
+	B.Add(EZ10,V101);
+	//Parameters
+	B.UpdateVertex(V100,0,EZ10,precision);
+	B.UpdateVertex(V101,100,EZ10,precision);
+
+	//Edge Z11
+	L = new Geom_Line(gp_Pnt(200,150,0),gp_Dir(0,0,1));
+	B.MakeEdge(EZ11,L,precision);
+	V110.Orientation(TopAbs_FORWARD);
+	V111.Orientation(TopAbs_REVERSED);
+	B.Add(EZ11,V110);
+	B.Add(EZ11,V111);
+	//Parameters
+	B.UpdateVertex(V110,0,EZ11,precision);
+	B.UpdateVertex(V111,100,EZ11,precision);
+
+
+	//Circular Edges
+	Handle (Geom_Circle) C;
+	Standard_Real R = 100;
+
+	//Edge EX01
+	C = new Geom_Circle(gp_Ax2(gp_Pnt(100,0,100),gp_Dir(0,1,0),gp_Dir(-1,0,0)),100);
+	B.MakeEdge(EX01,C,precision);
+	V001.Orientation(TopAbs_FORWARD);
+	V101.Orientation(TopAbs_REVERSED);
+	B.Add(EX01,V001);
+	B.Add(EX01,V101);
+	//Parameters
+	B.UpdateVertex(V001,0,EX01,precision);
+	B.UpdateVertex(V101,M_PI,EX01,precision);
+
+	//Edge EX11
+	C = new Geom_Circle(gp_Ax2(gp_Pnt(100,150,100),gp_Dir(0,1,0),gp_Dir(-1,0,0)),100);
+	B.MakeEdge(EX11,C,precision);
+	V011.Orientation(TopAbs_FORWARD);
+	V111.Orientation(TopAbs_REVERSED);
+	B.Add(EX11,V011);
+	B.Add(EX11,V111);
+	//Parameters
+	B.UpdateVertex(V011,0,EX11,precision);
+	B.UpdateVertex(V111,M_PI,EX11,precision);
+
+	//Build wire and faces
+	//Faces normals are along the axis X,Y,Z
+	TopoDS_Face FXMIN, FXMAX, FYMIN, FYMAX, FZMIN, FZMAX;
+	TopoDS_Wire W;
+	Handle (Geom_Plane) P;
+	Handle (Geom2d_Line) L2d;
+	Handle (Geom2d_Circle) C2d;
+	Handle (Geom_CylindricalSurface) S;
+
+	//Face FXMAX
+	P = new Geom_Plane(gp_Ax2(gp_Pnt(200,0,0),gp_Dir(1,0,0),gp_Dir(0,1,0)));
+	B.MakeFace(FXMAX,P,precision);
+	//the wire and the edges
+	B.MakeWire (W);
+
+	EY10.Orientation(TopAbs_FORWARD);
+	B.Add(W,EY10);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(1,0));
+	B.UpdateEdge(EY10,L2d,FXMAX,precision);
+
+	EZ11.Orientation(TopAbs_FORWARD);
+	B.Add(W,EZ11);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(150,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EZ11,L2d,FXMAX,precision);
+
+	EY11.Orientation(TopAbs_REVERSED);
+	B.Add(W,EY11);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,100),gp_Dir2d(1,0));
+	B.UpdateEdge(EY11,L2d,FXMAX,precision);
+
+	EZ10.Orientation(TopAbs_REVERSED);
+	B.Add(W,EZ10);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EZ10,L2d,FXMAX,precision);
+
+	B.Add(FXMAX,W);
+
+	BRepTools::Write(FXMAX,"E:\\temp\\f1.rle");
+
+	//Face FXMIN
+	P = new Geom_Plane(gp_Ax2(gp_Pnt(0,0,0),gp_Dir(-1,0,0),gp_Dir(0,0,1)));
+	B.MakeFace(FXMIN,P,precision);
+	//the wire and the edges
+	B.MakeWire (W);
+
+	EZ00.Orientation(TopAbs_FORWARD);
+	B.Add(W,EZ00);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(1,0));
+	B.UpdateEdge(EZ00,L2d,FXMIN,precision);
+
+	EY01.Orientation(TopAbs_FORWARD);
+	B.Add(W,EY01);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(100,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EY01,L2d,FXMIN,precision);
+
+	EZ01.Orientation(TopAbs_REVERSED);
+	B.Add(W,EZ01);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,150),gp_Dir2d(1,0));
+	B.UpdateEdge(EZ01,L2d,FXMIN,precision);
+
+	EY00.Orientation(TopAbs_REVERSED);
+	B.Add(W,EY00);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EY00,L2d,FXMIN,precision);
+
+
+	B.Add(FXMIN,W);
+	
+	//Face FYMAX
+
+	P = new Geom_Plane(gp_Ax2(gp_Pnt(0,0,0),gp_Dir(0,1,0),gp_Dir(0,0,1)));
+	B.MakeFace(FYMAX,P,precision);
+	//the wire and the edges
+	B.MakeWire (W);
+
+	EZ00.Orientation(TopAbs_FORWARD);
+	B.Add(W,EZ00);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(1,0));
+	B.UpdateEdge(EZ00,L2d,FYMAX,precision);
+
+	EX01.Orientation(TopAbs_FORWARD);
+	B.Add(W,EX01);
+	//pcurve
+	C2d = new Geom2d_Circle(gp_Ax2d(gp_Pnt2d(100,100),gp_Dir2d(0,-1)),100);
+	B.UpdateEdge(EX01,C2d,FYMAX,precision);
+	B.UpdateVertex(V001,0,EX01,FYMAX,precision);
+	B.UpdateVertex(V101,M_PI,EX01,FYMAX,precision);
+
+	EZ10.Orientation(TopAbs_REVERSED);
+	B.Add(W,EZ10);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,200),gp_Dir2d(1,0));
+	B.UpdateEdge(EZ10,L2d,FYMAX,precision);
+
+	EX00.Orientation(TopAbs_REVERSED);
+	B.Add(W,EX00);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EX00,L2d,FYMAX,precision);
+
+
+	B.Add(FYMAX,W);
+
+
+
+	//Face FYMIN
+	P = new Geom_Plane(gp_Ax2(gp_Pnt(0,150,0),gp_Dir(0,1,0),gp_Dir(0,0,1)));
+	B.MakeFace(FYMIN,P,precision);
+	//the wire and the edges
+	B.MakeWire (W);
+
+	EZ01.Orientation(TopAbs_FORWARD);
+	B.Add(W,EZ01);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(1,0));
+	B.UpdateEdge(EZ01,L2d,FYMIN,precision);
+
+	EX11.Orientation(TopAbs_FORWARD);
+	B.Add(W,EX11);
+	//pcurve
+	C2d = new Geom2d_Circle(gp_Ax2d(gp_Pnt2d(100,100),gp_Dir2d(0,-1)),100);
+	B.UpdateEdge(EX11,C2d,FYMIN,precision);
+	B.UpdateVertex(V011,0,EX11,FYMIN,precision);
+	B.UpdateVertex(V111,M_PI,EX11,FYMIN,precision);
+
+	EZ11.Orientation(TopAbs_REVERSED);
+	B.Add(W,EZ11);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,200),gp_Dir2d(1,0));
+	B.UpdateEdge(EZ11,L2d,FYMIN,precision);
+
+	EX10.Orientation(TopAbs_REVERSED);
+	B.Add(W,EX10);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EX10,L2d,FYMIN,precision);
+
+	B.Add(FYMIN,W);
+
+	//Face FZMAX
+	P = new Geom_Plane(gp_Ax2(gp_Pnt(0,0,0),gp_Dir(0,0,-1),gp_Dir(0,1,0)));
+	B.MakeFace(FZMAX,P,precision);
+	//the wire and the edges
+	B.MakeWire (W);
+
+	EY00.Orientation(TopAbs_FORWARD);
+	B.Add(W,EY00);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(1,0));
+	B.UpdateEdge(EY00,L2d,FZMAX,precision);
+
+	EX10.Orientation(TopAbs_FORWARD);
+	B.Add(W,EX10);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(150,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EX10,L2d,FZMAX,precision);
+
+	EY10.Orientation(TopAbs_REVERSED);
+	B.Add(W,EY10);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,200),gp_Dir2d(1,0));
+	B.UpdateEdge(EY10,L2d,FZMAX,precision);
+
+	EX00.Orientation(TopAbs_REVERSED);
+	B.Add(W,EX00);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EX00,L2d,FZMAX,precision);
+
+
+	B.Add(FZMAX,W);
+		
+	//Face FZMIN
+	S = new Geom_CylindricalSurface(gp_Ax3(gp_Pnt(100,0,100),gp_Dir(0,1,0),gp_Dir(-1,0,0)),100);
+	B.MakeFace(FZMIN,S,precision);
+
+	//the wire and the edges
+	B.MakeWire (W);
+
+	EX01.Orientation(TopAbs_FORWARD);
+	B.Add(W,EX01);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Ax2d(gp_Pnt2d(0,0),gp_Dir2d(1,0)));
+	B.UpdateEdge(EX01,L2d,FZMIN,precision);
+	B.UpdateVertex(V001,0,EX01,FZMIN,precision);
+	B.UpdateVertex(V101,M_PI,EX01,FZMIN,precision);
+
+	EY11.Orientation(TopAbs_FORWARD);
+	B.Add(W,EY11);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(M_PI,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EY11,L2d,FZMIN,precision);
+
+	EX11.Orientation(TopAbs_REVERSED);
+	B.Add(W,EX11);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Ax2d(gp_Pnt2d(0,150),gp_Dir2d(1,0)));
+	B.UpdateEdge(EX11,L2d,FZMIN,precision);
+	B.UpdateVertex(V111,M_PI,EX11,FZMIN,precision);
+	B.UpdateVertex(V011,0,EX11,FZMIN,precision);
+
+	EY01.Orientation(TopAbs_REVERSED);
+	B.Add(W,EY01);
+	//pcurve
+	L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(0,1));
+	B.UpdateEdge(EY01,L2d,FZMIN,precision);
+
+	B.Add(FZMIN,W);
+
+	FYMAX.Orientation(TopAbs_REVERSED);
+
+	BRepTools::Write(FZMIN,"E:\\temp\\f3.rle");
+	BRepTools::Write(FYMAX,"E:\\temp\\f2.rle");
+
+	//Shell
+	TopoDS_Shell Sh;
+	B.MakeShell(Sh);
+	B.Add(Sh,FXMAX);
+	B.Add(Sh,FXMIN);
+	B.Add(Sh,FYMAX);
+	B.Add(Sh,FYMIN);
+	B.Add(Sh,FZMAX);
+	B.Add(Sh,FZMIN);
+
+	// Solid
+	TopoDS_Solid Sol;
+	B.MakeSolid(Sol);
+	B.Add(Sol,Sh);
+
+	BRepTools::Write(Sol,"e://temp//solid");
+	Handle(AIS_Shape) borne = new AIS_Shape(Sol);
+	myAISContext->SetDisplayMode(borne,1);
+	myAISContext->SetColor(borne,Quantity_NOC_RED);
+	myAISContext->SetMaterial(borne,Graphic3d_NOM_PLASTIC,Standard_False);    
+	myAISContext->Display(borne,Standard_False);
+
+
+	Fit();
+   TCollection_AsciiString Message ("\
+		\n\
+//The tolerance is 0.01 	\n\
+Standard_Real precision(0.01);	\n\
+\n\
+//The builder	\n\
+BRep_Builder B;	\n\
+\n\
+//Build the vertices	\n\
+TopoDS_Vertex V000, V001, V010, V011, V100, V101, V110, V111;	\n\
+B.MakeVertex(V000,gp_Pnt(0,0,0),precision);	\n\
+B.MakeVertex(V001,gp_Pnt(0,0,100),precision);	\n\
+B.MakeVertex(V010,gp_Pnt(0,150,0),precision);	\n\
+B.MakeVertex(V011,gp_Pnt(0,150,100),precision);	\n\
+B.MakeVertex(V100,gp_Pnt(200,0,0),precision);	\n\
+B.MakeVertex(V101,gp_Pnt(200,0,100),precision);	\n\
+B.MakeVertex(V110,gp_Pnt(200,150,0),precision);	\n\
+B.MakeVertex(V111,gp_Pnt(200,150,100),precision);	\n\
+\n\
+//Build the edges	\n\
+//the edges are oriented as the axis X,Y,Z	\n\
+TopoDS_Edge EX00, EX01, EX10, EX11;	\n\
+TopoDS_Edge EY00, EY01, EY10, EY11;	\n\
+TopoDS_Edge EZ00, EZ01, EZ10, EZ11;	\n\
+Handle (Geom_Line) L;	\n\
+\n\
+//Edge X00	\n\
+L = new Geom_Line(gp_Pnt(0,0,0),gp_Dir(1,0,0));	\n\
+B.MakeEdge(EX00,L,precision);	\n\
+V000.Orientation(TopAbs_FORWARD);	\n\
+V100.Orientation(TopAbs_REVERSED);	\n\
+B.Add(EX00,V000);	\n\
+B.Add(EX00,V100);	\n\
+//Parameters	\n\
+B.UpdateVertex(V000,0,EX00,precision);	\n\
+B.UpdateVertex(V100,200,EX00,precision);	\n\
+\n\
+//Idem for all the linear edges...	\n\
+\n\
+//Circular Edges	\n\
+Handle (Geom_Circle) C;	\n\
+Standard_Real R = 100;	\n\
+\n\
+//Edge EX01	\n\
+C = new Geom_Circle(gp_Ax2(gp_Pnt(100,0,100),gp_Dir(0,1,0),gp_Dir(-1,0,0)),100);	\n\
+B.MakeEdge(EX01,C,precision);	\n\
+V001.Orientation(TopAbs_FORWARD);	\n\
+V101.Orientation(TopAbs_REVERSED);	\n\
+B.Add(EX01,V001);	\n\
+B.Add(EX01,V101);	\n\
+//Parameters	\n\
+B.UpdateVertex(V001,0,EX01,precision);	\n\
+B.UpdateVertex(V101,PI,EX01,precision);	\n\
+\n\
+//Idem for EX11	\n\
+\n\
+//Build wire and faces	\n\
+//Faces normals are along the axis X,Y,Z	\n\
+TopoDS_Face FXMIN, FXMAX, FYMIN, FYMAX, FZMIN, FZMAX;	\n\
+TopoDS_Wire W;	\n\
+Handle (Geom_Plane) P;	\n\
+Handle (Geom2d_Line) L2d;	\n\
+Handle (Geom2d_Circle) C2d;	\n\
+Handle (Geom_CylindricalSurface) S;	\n\
+\n\
+//Face FXMAX	\n\
+P = new Geom_Plane(gp_Ax2(gp_Pnt(200,0,0),gp_Dir(1,0,0),gp_Dir(0,1,0)));	\n\
+B.MakeFace(FXMAX,P,precision);	\n\
+//the wire and the edges	\n\
+B.MakeWire (W);	\n");
+Message += ("\
+\n\
+EY10.Orientation(TopAbs_FORWARD);	\n\
+B.Add(W,EY10);	\n\
+//pcurve	\n\
+L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(1,0));	\n\
+B.UpdateEdge(EY10,L2d,FXMAX,precision);	\n\
+	\n\
+EZ11.Orientation(TopAbs_FORWARD);	\n\
+B.Add(W,EZ11);	\n\
+//pcurve	\n\
+L2d = new Geom2d_Line(gp_Pnt2d(150,0),gp_Dir2d(0,1));	\n\
+B.UpdateEdge(EZ11,L2d,FXMAX,precision);	\n\
+	\n\
+EY11.Orientation(TopAbs_REVERSED);	\n\
+B.Add(W,EY11);	\n\
+//pcurve	\n\
+L2d = new Geom2d_Line(gp_Pnt2d(0,100),gp_Dir2d(1,0));	\n\
+B.UpdateEdge(EY11,L2d,FXMAX,precision);	\n\
+	\n\
+EZ10.Orientation(TopAbs_REVERSED);	\n\
+B.Add(W,EZ10);	\n\
+//pcurve	\n\
+L2d = new Geom2d_Line(gp_Pnt2d(0,0),gp_Dir2d(0,1));	\n\
+B.UpdateEdge(EZ10,L2d,FXMAX,precision);	\n\
+\n\
+B.Add(FXMAX,W);	\n\
+\n\
+//Idem for other faces...	\n\
+\n\
+//Shell	\n\
+TopoDS_Shell Sh;	\n\
+B.MakeShell(Sh);	\n\
+B.Add(Sh,FXMAX);	\n\
+B.Add(Sh,FXMIN);	\n\
+B.Add(Sh,FYMAX);	\n\
+B.Add(Sh,FYMIN);	\n\
+B.Add(Sh,FZMAX);	\n\
+B.Add(Sh,FZMIN);	\n\
+\n\
+// Solid	\n\
+TopoDS_Solid Sol;	\n\
+B.MakeSolid(Sol);	\n\
+B.Add(Sol,Sh);	\n\
+\n\
+\n");
+
+PocessTextInDialog("Make a shape with a builder", Message);
+
 }

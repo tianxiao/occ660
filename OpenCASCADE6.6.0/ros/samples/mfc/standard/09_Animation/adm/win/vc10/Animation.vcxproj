@@ -406,4 +406,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="\occbkp\occ660\OpenCASCADE6.6.0\ros\samples\mfc\standard\09_Animation\res\Animation.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>
