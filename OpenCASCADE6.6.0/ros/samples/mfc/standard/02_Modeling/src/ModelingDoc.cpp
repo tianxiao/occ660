@@ -30,6 +30,7 @@
 
 #include <BRep_PolygonOnSurface.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
+#include <Geom_CylindricalSurface.hxx>
 
 
 Handle(AIS_Shape) AIS1;
@@ -5092,12 +5093,21 @@ void CModelingDoc::Popup(const Standard_Integer  x,
 
 void CModelingDoc::OnBuildImprint()
 {
+
+
+
 	AIS_ListOfInteractive aList;
 	myAISContext->DisplayedObjects(aList);
 	AIS_ListIteratorOfListOfInteractive aListIterator;
 	for(aListIterator.Initialize(aList);aListIterator.More();aListIterator.Next()){
 		myAISContext->Remove(aListIterator.Value());
 	}
+
+
+	//The tolerance is the tolerance of confusion
+	Standard_Real precision = Precision::Confusion();
+
+#if 0
 
 	TopoDS_Shape C1 = BRepPrimAPI_MakeCylinder (50.,200.);
 	Handle(AIS_Shape) aCyl1 = new AIS_Shape(C1);
@@ -5113,8 +5123,6 @@ void CModelingDoc::OnBuildImprint()
 	myAISContext->SetColor(aCyl2,Quantity_NOC_MATRABLUE,Standard_False); 	
 	myAISContext->Display(aCyl2,Standard_False);
 
-	//The tolerance is the tolerance of confusion
-	Standard_Real precision = Precision::Confusion();
 
 	// create a cylinder surface
 	gp_Dir dir(1,0,0);
@@ -5161,7 +5169,7 @@ void CModelingDoc::OnBuildImprint()
 	// TopLoc_Location(); create a empty location -- local location
 	BRep_PolygonOnSurface polysufrep(poly2dImph,pln,TopLoc_Location());
 
-	// 
+	// polygon line segments sample codes
 	gp_Pnt p31(0,0,0);
 	gp_Pnt p32(40,0,0);
 	gp_Pnt p33(80,0,0);
@@ -5178,6 +5186,35 @@ void CModelingDoc::OnBuildImprint()
 	DrawUtil::DrawCurve(myAISContext,poly3,Quantity_NOC_YELLOW3,Standard_True);
 	TopoDS_Wire wire3 = makepoly3.Wire();
 	DrawUtil::DrawCurve(myAISContext,wire3,Quantity_NOC_VIOLET,Standard_True);
+#endif
+	// tips
+	//BRepPrim_FaceBuilder
+	// Can transfer a Geom_Surface to a TopoDS_Face
+	// TopoDS_Edge
+
+
+	// =============================================
+	// tips 2 methods to create 
+	//   1) Using the Builder 
+	//   2) Using the entities' contructor directly
+	//      e.g. the Geom_CylindricalSurface
+	// =============================================
+
+	// 1st I need to create a cylindrical class
+
+	Handle(Geom_Surface) cylinsurf4 = new Geom_CylindricalSurface( gp_Ax3(),70.0);
+	TopoDS_Face cylinfaceh4 = BRepLib_MakeFace(cylinsurf4,0,M_PI,0,50,precision);
+	DrawUtil::DrawSurface(myAISContext,cylinfaceh4,Quantity_NOC_YELLOW3,Standard_True);
+
+	// polygon on surface sample
+	// First create a geometry line
+	gp_Pnt2d lineorin1(0,0);
+	gp_Dir2d linedir1(1,100);
+	gp_Ax2d gpaxline1(lineorin1,linedir1);
+	Handle(Geom2d_Line) line1h = new Geom2d_Line(gpaxline1);
+	TopoDS_Edge lineedge1 = BRepLib_MakeEdge(line1h,cylinsurf4,0,M_PI);
+	DrawUtil::DrawCurve(myAISContext, lineedge1, Quantity_NOC_ORANGE, Standard_True);
+
 
 
 
@@ -5190,3 +5227,5 @@ Message += ("\
 PocessTextInDialog("Make a shape with a builder", Message);
 
 }
+
+#include <AdvApp2Var_Data.hxx>

@@ -38,20 +38,33 @@ public:
 		return aGraphicPoint;
 	};
 
-	//static Handle_AIS_Shape DrawSurface( Handle_AIS_InteractiveContext myAISContext,
-	//											const Handle_Geom_BSplineCurve &surf,
-	//											const Quantity_Color& theColor,
-	//											const Standard_Boolean toDisplay)
-	//{
-	//	Standard_Real precision = Precision::Confusion();
-	//	TopoDS_Face topoface = BRepBuilderAPI_MakeFace(surf,precision);
-	//	Handle(AIS_Shape) surf_ais = new AIS_Shape(topoface);
-	//	myAISContext->SetMaterial(surf_ais,Graphic3d_NOM_PLASTIC,Standard_True);    
-	//	myAISContext->SetColor(surf_ais,theColor,Standard_True); 	
-	//	myAISContext->Display(surf_ais,Standard_False);
+	static Handle_AIS_Shape DrawSurface( Handle_AIS_InteractiveContext myAISContext,
+												const Handle_Geom_Surface &surf,
+												const Quantity_Color& theColor,
+												const Standard_Boolean toDisplay)
+	{
+		Standard_Real precision = Precision::Confusion();
+		TopoDS_Face topoface = BRepBuilderAPI_MakeFace(surf,precision);
+		Handle(AIS_Shape) surf_ais = new AIS_Shape(topoface);
+		myAISContext->SetMaterial(surf_ais,Graphic3d_NOM_PLASTIC,Standard_True);    
+		myAISContext->SetColor(surf_ais,theColor,Standard_True); 	
+		myAISContext->Display(surf_ais,Standard_False);
 
-	//	return surf_ais;
-	//};
+		return surf_ais;
+	};
+
+	static Handle_AIS_Shape DrawSurface( Handle_AIS_InteractiveContext myAISContext,
+												const TopoDS_Shape &surfshape,
+												const Quantity_Color& theColor,
+												const Standard_Boolean toDisplay)
+	{
+		Handle(AIS_Shape) surf_ais = new AIS_Shape(surfshape);
+		myAISContext->SetMaterial(surf_ais,Graphic3d_NOM_PLASTIC,Standard_True);    
+		myAISContext->SetColor(surf_ais,theColor,Standard_True); 	
+		myAISContext->Display(surf_ais,Standard_False);
+
+		return surf_ais;
+	}
 
 
 
