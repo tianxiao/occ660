@@ -12,6 +12,7 @@
 #include <Precision.hxx>
 #include <Standard_Boolean.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
+#include <TopoDS_Edge.hxx>
 
 
 class DrawUtil
@@ -67,6 +68,32 @@ public:
 		myAISContext->Display(surf_ais,Standard_False);
 
 		return surf_ais;
+	};
+
+	static Handle_AIS_Shape DrawCurve( Handle_AIS_InteractiveContext myAISContext,
+												const TopoDS_Edge &edge,
+												const Quantity_Color& theColor,
+												const Standard_Boolean toDisplay)
+	{
+		Handle(AIS_Shape) edgesh_ais = new AIS_Shape(edge);
+		myAISContext->SetMaterial(edgesh_ais,Graphic3d_NOM_PLASTIC,Standard_True);    
+		myAISContext->SetColor(edgesh_ais,theColor,Standard_True); 	
+		myAISContext->Display(edgesh_ais,Standard_False);
+
+		return edgesh_ais;
+	};
+
+	static Handle_AIS_Shape DrawCurve( Handle_AIS_InteractiveContext myAISContext,
+												const TopoDS_Shape &shape,
+												const Quantity_Color& theColor,
+												const Standard_Boolean toDisplay)
+	{
+		Handle(AIS_Shape) shape_ais = new AIS_Shape(shape);
+		myAISContext->SetMaterial(shape_ais,Graphic3d_NOM_PLASTIC,Standard_True);    
+		myAISContext->SetColor(shape_ais,theColor,Standard_True); 	
+		myAISContext->Display(shape_ais,Standard_False);
+
+		return shape_ais;
 	};
 
 };

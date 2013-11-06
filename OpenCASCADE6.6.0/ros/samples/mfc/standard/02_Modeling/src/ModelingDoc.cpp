@@ -28,6 +28,9 @@
 #include <Poly_Polygon2D.hxx>
 #include <TopLoc_Location.hxx>
 
+#include <BRep_PolygonOnSurface.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
+
 
 Handle(AIS_Shape) AIS1;
 TopoDS_Face F1,F2;
@@ -5154,8 +5157,28 @@ void CModelingDoc::OnBuildImprint()
 	arr2dForPoly.SetValue(2,gp_Pnt2d(100,0));
 	arr2dForPoly.SetValue(3,gp_Pnt2d(100,100));
 	arr2dForPoly.SetValue(4,gp_Pnt2d(0,100));
-	Poly_Polygon2D polypoly(arr2dForPoly);
+	Handle(Poly_Polygon2D) poly2dImph = new Poly_Polygon2D(arr2dForPoly);
 	// TopLoc_Location(); create a empty location -- local location
+	BRep_PolygonOnSurface polysufrep(poly2dImph,pln,TopLoc_Location());
+
+	// 
+	gp_Pnt p31(0,0,0);
+	gp_Pnt p32(40,0,0);
+	gp_Pnt p33(80,0,0);
+	gp_Pnt p34(100,80,0);
+	gp_Pnt p35(150,100,0);
+
+	BRepBuilderAPI_MakePolygon makepoly3;
+	makepoly3.Add(p31);
+	makepoly3.Add(p32);
+	makepoly3.Add(p33);
+	makepoly3.Add(p34);
+	makepoly3.Add(p35);
+	TopoDS_Edge poly3 = makepoly3.Edge();
+	DrawUtil::DrawCurve(myAISContext,poly3,Quantity_NOC_YELLOW3,Standard_True);
+	TopoDS_Wire wire3 = makepoly3.Wire();
+	DrawUtil::DrawCurve(myAISContext,wire3,Quantity_NOC_VIOLET,Standard_True);
+
 
 
 	Fit();
