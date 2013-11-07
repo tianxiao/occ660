@@ -31,12 +31,14 @@
 #include <BRep_PolygonOnSurface.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <Geom_CylindricalSurface.hxx>
-
+#include <Geom_SphericalSurface.hxx>
+#include <Bnd_B3d.hxx>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
 #include <assert.h>
+#include <math.h>
 
 
 Handle(AIS_Shape) AIS1;
@@ -105,6 +107,8 @@ BEGIN_MESSAGE_MAP(CModelingDoc, OCC_3dBaseDoc)
 	ON_COMMAND(ID_FILLWITHTANG, OnFillwithtang)
 	//}}AFX_MSG_MAP
 	ON_COMMAND(ID_BUTTON872, &CModelingDoc::OnBuildImprint)
+	ON_COMMAND(ID_BUTTON873, &CModelingDoc::OnBtn873ImprintSphere)
+	ON_COMMAND(ID_BUTTON874, &CModelingDoc::OnBtn874FreeSurface)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -5109,6 +5113,124 @@ typedef struct tPoint
 //
 //}
 
+static void segmentreader(const char* filename, std::vector<tPoint>& pnt2dlist )
+{
+	tPoint tmpPoint;
+	int groupid;
+	long double px,py,pz;
+	char linebuff[128];
+	FILE* fid1 = fopen(filename,"r");
+
+	while (fgets(linebuff,128,fid1)!=NULL) {
+		if (strlen(linebuff)==0) 
+			continue;
+		sscanf(linebuff,"%d\t%lf %lf %lf",&groupid,&px,&py,&pz);
+		tmpPoint.x = px;
+		tmpPoint.y = py;
+		tmpPoint.z = pz;
+		tmpPoint.gid = groupid;
+		pnt2dlist.push_back(tmpPoint);
+		//printf("%d\t%f\t%f\t%f\n",groupid,px,py,pz);
+	}
+
+	fclose(fid1);
+	assert(pnt2dlist.size());
+}
+
+static void b2segmentbranctangle( std::vector<tPoint>& pnt2dlist, tPoint& b2dMinP, tPoint& b2dMaxP)
+{
+	assert(pnt2dlist.size());
+	b2dMinP = pnt2dlist[0];
+	b2dMaxP = b2dMinP;
+	for ( size_t i=0; i<pnt2dlist.size(); ++i ) {
+		b2dMinP.x = pnt2dlist[i].x>b2dMinP.x?b2dMinP.x:pnt2dlist[i].x;
+		b2dMinP.y = pnt2dlist[i].y>b2dMinP.y?b2dMinP.y:pnt2dlist[i].y;
+		b2dMaxP.x = pnt2dlist[i].x<b2dMaxP.x?b2dMaxP.x:pnt2dlist[i].x;
+		b2dMaxP.y = pnt2dlist[i].y<b2dMaxP.y?b2dMaxP.y:pnt2dlist[i].y;
+	}
+}
+
+static void b2segmentedgemaker( std::vector<Handle_Geom2d_TrimmedCurve>& seg2dlist, std::vector<tPoint>& pnt2dlist )
+{
+	Handle_Geom2d_TrimmedCurve tmptricurv;
+	seg2dlist.reserve(pnt2dlist.size()-1);
+	gp_Pnt2d pstart, pend;
+	for (size_t i=0; i<pnt2dlist.size()-1; ++i ) {
+		pstart.SetX(pnt2dlist[i].x);
+		pstart.SetY(pnt2dlist[i].y);
+		if ( pnt2dlist[i].gid!=pnt2dlist[i+1].gid ) 
+			continue;
+		pend.SetX(pnt2dlist[i+1].x);
+		pend.SetY(pnt2dlist[i+1].y);
+		tmptricurv = GCE2d_MakeSegment(pstart,pend);
+		//tmptricurv->
+		if ( (pstart.X()-pend.X())*(pstart.X()-pend.X())+(pstart.Y()-pend.Y())*(pstart.Y()-pend.Y()) <0.00000001 ) {
+			printf("Bad segment!\n");
+			continue;
+		}
+			
+		seg2dlist.push_back(tmptricurv);
+	}
+}
+
+class tD2Domain
+{
+	friend class tD2Scale;
+private:
+	double mLon;
+	double mLat;
+	double mLonstart;
+	double mLatstart;
+
+	double mLonscale;
+	double mLatscale;
+
+	double mRatio;
+	double mPracticalRatio;
+
+public:
+	tD2Domain( double lonstart, double lonend, double latstart, double latend, double praclonscale=1.0, double praclatscale=1.0 )
+		:mLonstart(lonstart), mLatstart(latstart), mLonscale(praclonscale), mLatscale(praclatscale)
+	{
+		mLon = lonend - lonstart;
+		mLat = latend - latstart;
+		mRatio = mLon/mLat;
+		mPracticalRatio = mLon*praclonscale/(mLat*praclatscale);
+	}
+
+	double lonlen() { return mLon*mLonscale; };
+	double latlen() { return mLat*mLatscale; };
+};
+
+class tD2Scale
+{
+public:
+	double mD2ustart;
+	double mD2vstart;
+	double mD2uscale;
+	double mD2vscale;
+
+public:
+	tD2Scale( 
+		tD2Domain& d2,
+		tD2Domain& s2,
+		std::vector<tPoint>& pnt2dlist )
+	{
+		double d2uvscale = 0.0;
+		//double d2aspectratio = 0.0;
+		if (d2.mPracticalRatio>s2.mPracticalRatio) {
+			d2uvscale = s2.lonlen()/d2.lonlen();  // asslign the short lat
+		} else {
+			d2uvscale = s2.latlen()/d2.latlen(); 
+		}
+
+		for ( size_t i=0; i<pnt2dlist.size(); ++i ) {
+			pnt2dlist[i].x = (pnt2dlist[i].x-d2.mLonstart)/s2.mLonscale*d2uvscale;
+			pnt2dlist[i].y = (pnt2dlist[i].y-d2.mLatstart)/s2.mLatscale*d2uvscale;
+		}
+	}
+
+};
 
 void CModelingDoc::OnBuildImprint()
 {
@@ -5279,41 +5401,13 @@ void CModelingDoc::OnBuildImprint()
 	// 1st create a 2d segment GCE2d_MakeSegment
 	// display it on a surface
 	// imprint it to the cylindrical surface
-
-
-	
-
 	std::vector<tPoint> pnt2dlist;
-	tPoint tmpPoint;
-	int groupid;
-	long double px,py,pz;
-	char linebuff[128];
-	FILE* fid1 = fopen("D:\\print2d\\DPointCircle.txt","r");
 
-	while (fgets(linebuff,128,fid1)!=NULL) {
-		if (strlen(linebuff)==0) 
-			continue;
-		sscanf(linebuff,"%d\t%lf %lf %lf",&groupid,&px,&py,&pz);
-		tmpPoint.x = px;
-		tmpPoint.y = py;
-		tmpPoint.z = pz;
-		tmpPoint.gid = groupid;
-		pnt2dlist.push_back(tmpPoint);
-		//printf("%d\t%f\t%f\t%f\n",groupid,px,py,pz);
-	}
+	segmentreader("D:\\print2d\\DPoint.txt",pnt2dlist);
 
-	fclose(fid1);
-	assert(pnt2dlist.size());
+	tPoint b2dMinP, b2dMaxP;
+	b2segmentbranctangle( pnt2dlist, b2dMinP, b2dMaxP );
 
-
-	tPoint b2dMinP = pnt2dlist[0];
-	tPoint b2dMaxP = b2dMinP;
-	for ( size_t i=0; i<pnt2dlist.size(); ++i ) {
-		b2dMinP.x = pnt2dlist[i].x>b2dMinP.x?b2dMinP.x:pnt2dlist[i].x;
-		b2dMinP.y = pnt2dlist[i].y>b2dMinP.y?b2dMinP.y:pnt2dlist[i].y;
-		b2dMaxP.x = pnt2dlist[i].x<b2dMaxP.x?b2dMaxP.x:pnt2dlist[i].x;
-		b2dMaxP.y = pnt2dlist[i].y<b2dMaxP.y?b2dMaxP.y:pnt2dlist[i].y;
-	}
 	// 2d fonts parameters
 	const double b2dlon = b2dMaxP.x-b2dMinP.x;
 	const double b2dlat = b2dMaxP.y-b2dMinP.y;
@@ -5328,8 +5422,14 @@ void CModelingDoc::OnBuildImprint()
 	const double d3surflat = d3cylinheight-0.0;
 	const double d3surfratio = d3surflon/d3surflat;   // the U, V ratio
 	const double d3surfpraticalratio = d3surflon*d3cylinsurfradius/d3cylinheight;
-	
 
+	tD2Domain d2( b2dMinP.x, b2dMaxP.x, b2dMinP.y, b2dMaxP.y );
+	tD2Domain s2( 0, d3cylinU, 0.0, d3cylinheight, d3cylinsurfradius );
+
+	tD2Scale d2s2scale( d2, s2, pnt2dlist );
+
+	
+#if 0
 	// ratios
 	double b2dd3ratio;
 	if ( b2dpraticalratio>d3surfpraticalratio ) 
@@ -5342,29 +5442,12 @@ void CModelingDoc::OnBuildImprint()
 		pnt2dlist[i].x = (pnt2dlist[i].x-b2dMinP.x)*b2dd3ratio/d3cylinsurfradius;
 		pnt2dlist[i].y = (pnt2dlist[i].y-b2dMinP.y)*b2dd3ratio/1.0;
 	}
-
+#endif 
 
 
 	std::vector<Handle_Geom2d_TrimmedCurve> seg2dlist;
-	Handle_Geom2d_TrimmedCurve tmptricurv;
-	seg2dlist.reserve(pnt2dlist.size()-1);
-	gp_Pnt2d pstart, pend;
-	for (size_t i=0; i<pnt2dlist.size()-1; ++i ) {
-		pstart.SetX(pnt2dlist[i].x);
-		pstart.SetY(pnt2dlist[i].y);
-		if ( pnt2dlist[i].gid!=pnt2dlist[i+1].gid ) 
-			continue;
-		pend.SetX(pnt2dlist[i+1].x);
-		pend.SetY(pnt2dlist[i+1].y);
-		tmptricurv = GCE2d_MakeSegment(pstart,pend);
-		//tmptricurv->
-		if ( (pstart.X()-pend.X())*(pstart.X()-pend.X())+(pstart.Y()-pend.Y())*(pstart.Y()-pend.Y()) <0.00000001 ) {
-			printf("Bad segment!\n");
-			continue;
-		}
-			
-		seg2dlist.push_back(tmptricurv);
-	}
+	b2segmentedgemaker( seg2dlist, pnt2dlist );
+
 
 	Handle(Geom_Plane) ffontplanegeomh = new Geom_Plane(gp_Ax3());
 	for (size_t i=0; i<seg2dlist.size(); ++i ) {
@@ -5398,3 +5481,141 @@ PocessTextInDialog("Make a shape with a builder", Message);
 }
 
 #include <AdvApp2Var_Data.hxx>
+
+void CModelingDoc::OnBtn873ImprintSphere()
+{
+	AIS_ListOfInteractive aList;
+	myAISContext->DisplayedObjects(aList);
+	AIS_ListIteratorOfListOfInteractive aListIterator;
+	for(aListIterator.Initialize(aList);aListIterator.More();aListIterator.Next()){
+		myAISContext->Remove(aListIterator.Value());
+	}
+
+	//The tolerance is the tolerance of confusion
+	Standard_Real precision = Precision::Confusion();
+
+	// sphere surface paramters
+	// create a partial sphere surface
+	const double sphereradius = 70.0;
+	const double lonstart = 0.0;
+	const double lonend = M_PI;
+	const double latstart = 0.0;
+	const double latend = M_PI/4.0;
+	const double praclon = sphereradius;
+	const double praclat = sphereradius;
+
+	Handle(Geom_Surface) shperesurfgeomh = new Geom_SphericalSurface(gp_Ax3(),sphereradius);
+	gp_Sphere gpshererpsurf(gp_Ax3(),sphereradius);
+
+	// difference between the BRepLib & BRepBuilderAPI  pk?
+	TopoDS_Face gpsherepface = BRepLib_MakeFace(gpshererpsurf,0,M_PI,latstart,latend);
+	TopoDS_Face sphereface = BRepBuilderAPI_MakeFace(shperesurfgeomh,0,M_PI,latstart,latend,precision);
+	DrawUtil::DrawSurface(myAISContext,sphereface,Quantity_NOC_TOMATO,Standard_True);
+	//DrawUtil::DrawSurface(myAISContext,gpsherepface,Quantity_NOC_TOMATO,Standard_True);
+
+	std::vector<tPoint> pnt2dlist;
+	segmentreader("D:\\print2d\\DPointCircle.txt",pnt2dlist);
+
+	tPoint b2dMinP, b2dMaxP;
+	b2segmentbranctangle( pnt2dlist, b2dMinP, b2dMaxP );
+
+	tD2Domain d2( b2dMinP.x, b2dMaxP.x, b2dMinP.y, b2dMaxP.y );
+	tD2Domain s2( lonstart, lonend, latstart, latend, praclon, praclat );
+
+	tD2Scale d2s2scale( d2, s2, pnt2dlist );
+
+	std::vector<Handle_Geom2d_TrimmedCurve> seg2dlist;
+	b2segmentedgemaker( seg2dlist, pnt2dlist );
+
+	for (size_t i=0; i<seg2dlist.size(); ++i ) {
+		TopoDS_Edge tmplineedge = BRepLib_MakeEdge(seg2dlist[i],shperesurfgeomh);
+		DrawUtil::DrawCurve(myAISContext, tmplineedge, Quantity_NOC_BLACK, Standard_True);
+	}
+
+	Fit();
+}
+
+void CModelingDoc::OnBtn874FreeSurface()
+{
+	AIS_ListOfInteractive aList;
+	myAISContext->DisplayedObjects(aList);
+	AIS_ListIteratorOfListOfInteractive aListIterator;
+	for(aListIterator.Initialize(aList);aListIterator.More();aListIterator.Next()){
+		myAISContext->Remove(aListIterator.Value());
+	}
+
+	TColgp_Array1OfPnt Pnts1(1,3);
+	TColgp_Array1OfPnt Pnts2(1,3);
+	TColgp_Array1OfPnt Pnts3(1,3);
+	TColgp_Array1OfPnt Pnts4(1,3);
+
+	Pnts1(1) = gp_Pnt(0,0,0);
+	Pnts1(2) = gp_Pnt(5,0,0);
+	Pnts1(3) = gp_Pnt(10,10,0);
+
+	Pnts2(1) = gp_Pnt(10,10,0);
+	Pnts2(2) = gp_Pnt(5,12,4);
+	Pnts2(3) = gp_Pnt(0,15,10);
+
+	Pnts3(1) = gp_Pnt(0,15,10);
+	Pnts3(2) = gp_Pnt(-12,10,11);
+	Pnts3(3) = gp_Pnt(-10,5,13);
+
+	Pnts4(1) = gp_Pnt(-10,5,13);
+	Pnts4(2) = gp_Pnt(-2,-2,2);
+	Pnts4(3) = gp_Pnt(0,0,0);
+
+
+	Bnd_B3d b3d;
+	for (int i=1; i<4; ++i ) {
+		b3d.Add(Pnts1(i));
+		b3d.Add(Pnts2(i));
+		b3d.Add(Pnts3(i));
+		b3d.Add(Pnts4(i));
+	}
+	const double surfaceextend = sqrt(b3d.SquareExtent());
+	
+	GeomAPI_PointsToBSpline PTBS1(Pnts1);
+	GeomAPI_PointsToBSpline PTBS2(Pnts2);
+	GeomAPI_PointsToBSpline PTBS3(Pnts3);
+	GeomAPI_PointsToBSpline PTBS4(Pnts4);
+	Handle(Geom_BSplineCurve) C1 = PTBS1.Curve();
+	Handle(Geom_BSplineCurve) C2 = PTBS2.Curve();
+	Handle(Geom_BSplineCurve) C3 = PTBS3.Curve();
+	Handle(Geom_BSplineCurve) C4 = PTBS4.Curve();
+
+	GeomFill_BSplineCurves fill; 
+	fill.Init(C1,C2,C3,C4,GeomFill_CoonsStyle);
+	Handle(Geom_BSplineSurface) BSS = fill.Surface();
+
+	TopoDS_Shape S = BRepBuilderAPI_MakeFace(BSS, Precision::Confusion()).Face();
+
+	Handle(AIS_Shape) ais1 = new AIS_Shape(S);
+	myAISContext->SetColor(ais1,Quantity_NOC_GREEN,Standard_False); 
+	myAISContext->SetMaterial(ais1,Graphic3d_NOM_PLASTIC,Standard_False);   
+	myAISContext->Display(ais1,Standard_False);
+
+
+
+	std::vector<tPoint> pnt2dlist;
+	segmentreader("D:\\print2d\\DPoint.txt",pnt2dlist);
+
+	tPoint b2dMinP, b2dMaxP;
+	b2segmentbranctangle( pnt2dlist, b2dMinP, b2dMaxP );
+
+	tD2Domain d2( b2dMinP.x, b2dMaxP.x, b2dMinP.y, b2dMaxP.y );
+	tD2Domain s2( 0, 1, 0, 1, surfaceextend, surfaceextend );
+
+	tD2Scale d2s2scale( d2, s2, pnt2dlist );
+
+	std::vector<Handle_Geom2d_TrimmedCurve> seg2dlist;
+	b2segmentedgemaker( seg2dlist, pnt2dlist );
+
+	for (size_t i=0; i<seg2dlist.size(); ++i ) {
+		TopoDS_Edge tmplineedge = BRepLib_MakeEdge(seg2dlist[i],BSS);
+		DrawUtil::DrawCurve(myAISContext, tmplineedge, Quantity_NOC_BLACK, Standard_True);
+	}
+
+	Fit();
+
+}

@@ -96,6 +96,9 @@ public:
 private:
 	void DrawRaw();
 	//void DrawRaw(double xscale, double yscale, std::vector<tPoint> &pointlist);
+public:
+	afx_msg void OnBtn873ImprintSphere();
+	afx_msg void OnBtn874FreeSurface();
 };
 
 /////////////////////////////////////////////////////////////////////////////

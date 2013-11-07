@@ -38,6 +38,17 @@ public:
 		return aGraphicPoint;
 	};
 
+	static Handle_AIS_Shape DrawTopoShape( Handle_AIS_InteractiveContext myAISContext,
+												const TopoDS_Shape& shape,
+												const Quantity_Color& theColor,
+												const Standard_Boolean toDisplay)
+	{
+		Handle(AIS_Shape) shape_ais = new AIS_Shape(shape);
+		myAISContext->SetMaterial(shape_ais,Graphic3d_NOM_PLASTIC,Standard_True);    
+		myAISContext->SetColor(shape_ais,theColor,Standard_True); 	
+		myAISContext->Display(shape_ais,Standard_False);
+	}
+
 	static Handle_AIS_Shape DrawSurface( Handle_AIS_InteractiveContext myAISContext,
 												const Handle_Geom_Surface &surf,
 												const Quantity_Color& theColor,
