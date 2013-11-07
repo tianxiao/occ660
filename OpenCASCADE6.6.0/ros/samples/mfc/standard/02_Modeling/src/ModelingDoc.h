@@ -10,6 +10,7 @@
 #endif // _MSC_VER >= 1000
 
 #include <OCC_3dDoc.h>
+#include <vector>
 
 class CModelingDoc : public OCC_3dDoc
 {
@@ -90,6 +91,11 @@ protected:
 public:
 	int myState;
 	afx_msg void OnBuildImprint();
+
+
+private:
+	void DrawRaw();
+	//void DrawRaw(double xscale, double yscale, std::vector<tPoint> &pointlist);
 };
 
 /////////////////////////////////////////////////////////////////////////////

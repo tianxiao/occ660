@@ -33,6 +33,12 @@
 #include <Geom_CylindricalSurface.hxx>
 
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+#include <assert.h>
+
+
 Handle(AIS_Shape) AIS1;
 TopoDS_Face F1,F2;
 TopoDS_Edge E1,E2;
@@ -5091,6 +5097,19 @@ void CModelingDoc::Popup(const Standard_Integer  x,
 }
 
 
+typedef struct tPoint
+{
+	double x,y,z;
+	int gid;
+} tPoint;
+
+
+//void CModelingDoc::DrawRaw(double xscale, double yscale, std::vector<tPoint> &pointlist)
+//{
+//
+//}
+
+
 void CModelingDoc::OnBuildImprint()
 {
 
@@ -5187,6 +5206,11 @@ void CModelingDoc::OnBuildImprint()
 	TopoDS_Wire wire3 = makepoly3.Wire();
 	DrawUtil::DrawCurve(myAISContext,wire3,Quantity_NOC_VIOLET,Standard_True);
 #endif
+
+
+
+#if 0
+// Imprint Experiment
 	// tips
 	//BRepPrim_FaceBuilder
 	// Can transfer a Geom_Surface to a TopoDS_Face
@@ -5201,19 +5225,164 @@ void CModelingDoc::OnBuildImprint()
 	// =============================================
 
 	// 1st I need to create a cylindrical class
-
-	Handle(Geom_Surface) cylinsurf4 = new Geom_CylindricalSurface( gp_Ax3(),70.0);
+	const double cylin4radius = 70.0;
+	Handle(Geom_Surface) cylinsurf4 = new Geom_CylindricalSurface( gp_Ax3(),cylin4radius);
 	TopoDS_Face cylinfaceh4 = BRepLib_MakeFace(cylinsurf4,0,M_PI,0,50,precision);
 	DrawUtil::DrawSurface(myAISContext,cylinfaceh4,Quantity_NOC_YELLOW3,Standard_True);
+
+	Handle(Geom_Surface) cylinsurf4ref = new Geom_CylindricalSurface( gp_Ax3(),cylin4radius);
+	TopoDS_Face cylinfacehref4 = BRepLib_MakeFace(cylinsurf4ref, 0, M_PI, -50, 50,  precision);
+	DrawUtil::DrawSurface(myAISContext,cylinfacehref4,Quantity_NOC_WHEAT,Standard_True);
+
+	// cylindrial surface
+	// u: [0,2*PI];
+	// v: [-infinite, +infinite];
+	// cylindrial surface radius
+	// cylin4umin, cylin4umax
+	// cylin4vmin, cylin4vmax
+	
+	double cylin4umin = 0.0;
+	double cylin4umax = M_PI;
+	double cylin4vmin = 0.0;
+	double cylin4vmax = 50.0;
+
+	double d2d3ratio3 = cylin4vmax-cylin4vmin;
+	double d2d3URatio3 = cylin4radius;
+	double d2deVRatio3 = 1.0;
 
 	// polygon on surface sample
 	// First create a geometry line
 	gp_Pnt2d lineorin1(0,0);
-	gp_Dir2d linedir1(1,100);
+	gp_Dir2d linedir1(1/d2d3URatio3,1/d2deVRatio3);
 	gp_Ax2d gpaxline1(lineorin1,linedir1);
 	Handle(Geom2d_Line) line1h = new Geom2d_Line(gpaxline1);
-	TopoDS_Edge lineedge1 = BRepLib_MakeEdge(line1h,cylinsurf4,0,M_PI);
-	DrawUtil::DrawCurve(myAISContext, lineedge1, Quantity_NOC_ORANGE, Standard_True);
+	// BRepLib_MakeEdge, The u v is the surface u,v not the line u,v be careful about this!k
+	TopoDS_Edge lineedge1 = BRepLib_MakeEdge(line1h,cylinsurf4,0,cylin4vmax);
+	DrawUtil::DrawCurve(myAISContext, lineedge1, Quantity_NOC_BLACK, Standard_True);
+
+	gp_Pnt2d lineorin2(cylin4vmax/d2d3URatio3,cylin4vmax);
+	gp_Dir2d linedir2(1/d2d3URatio3,-1/d2deVRatio3);
+	gp_Ax2d gpaxline2(lineorin2,linedir2);
+	Handle(Geom2d_Line) line2h = new Geom2d_Line(gpaxline2);
+	TopoDS_Edge lineedge2 = BRepLib_MakeEdge(line2h,cylinsurf4,0.0,cylin4vmax);
+	DrawUtil::DrawCurve(myAISContext, lineedge2, Quantity_NOC_BLACK, Standard_True);
+
+	gp_Pnt2d lineorin3(0.5*cylin4vmax/d2d3URatio3,0.5*cylin4vmax);
+	gp_Dir2d linedir3(1,0);
+	gp_Ax2d gpaxline3(lineorin3,linedir3);
+	Handle(Geom2d_Line) line3h = new Geom2d_Line(gpaxline3);
+	TopoDS_Edge lineedge3 = BRepLib_MakeEdge(line3h,cylinsurf4,0,cylin4vmax/d2d3URatio3);
+	DrawUtil::DrawCurve(myAISContext, lineedge3, Quantity_NOC_BLACK, Standard_True);
+#endif
+
+
+	// 1st create a 2d segment GCE2d_MakeSegment
+	// display it on a surface
+	// imprint it to the cylindrical surface
+
+
+	
+
+	std::vector<tPoint> pnt2dlist;
+	tPoint tmpPoint;
+	int groupid;
+	long double px,py,pz;
+	char linebuff[128];
+	FILE* fid1 = fopen("D:\\print2d\\DPointCircle.txt","r");
+
+	while (fgets(linebuff,128,fid1)!=NULL) {
+		if (strlen(linebuff)==0) 
+			continue;
+		sscanf(linebuff,"%d\t%lf %lf %lf",&groupid,&px,&py,&pz);
+		tmpPoint.x = px;
+		tmpPoint.y = py;
+		tmpPoint.z = pz;
+		tmpPoint.gid = groupid;
+		pnt2dlist.push_back(tmpPoint);
+		//printf("%d\t%f\t%f\t%f\n",groupid,px,py,pz);
+	}
+
+	fclose(fid1);
+	assert(pnt2dlist.size());
+
+
+	tPoint b2dMinP = pnt2dlist[0];
+	tPoint b2dMaxP = b2dMinP;
+	for ( size_t i=0; i<pnt2dlist.size(); ++i ) {
+		b2dMinP.x = pnt2dlist[i].x>b2dMinP.x?b2dMinP.x:pnt2dlist[i].x;
+		b2dMinP.y = pnt2dlist[i].y>b2dMinP.y?b2dMinP.y:pnt2dlist[i].y;
+		b2dMaxP.x = pnt2dlist[i].x<b2dMaxP.x?b2dMaxP.x:pnt2dlist[i].x;
+		b2dMaxP.y = pnt2dlist[i].y<b2dMaxP.y?b2dMaxP.y:pnt2dlist[i].y;
+	}
+	// 2d fonts parameters
+	const double b2dlon = b2dMaxP.x-b2dMinP.x;
+	const double b2dlat = b2dMaxP.y-b2dMinP.y;
+	const double b2dratio = b2dlon/b2dlat;
+	const double b2dpraticalratio = b2dratio;
+
+	// 3d cylindrical surface parameters
+	const double d3cylinsurfradius = 70;
+	const double d3cylinheight = 50;
+	const double d3cylinU = M_PI;
+	const double d3surflon = d3cylinU-0.0;
+	const double d3surflat = d3cylinheight-0.0;
+	const double d3surfratio = d3surflon/d3surflat;   // the U, V ratio
+	const double d3surfpraticalratio = d3surflon*d3cylinsurfradius/d3cylinheight;
+	
+
+	// ratios
+	double b2dd3ratio;
+	if ( b2dpraticalratio>d3surfpraticalratio ) 
+		b2dd3ratio = d3surflon*d3cylinsurfradius/b2dlon;
+	else 
+		b2dd3ratio = d3surflat*1.0/b2dlat;
+
+	// reposition the raw points
+	for ( size_t i=0; i<pnt2dlist.size(); ++i ) {
+		pnt2dlist[i].x = (pnt2dlist[i].x-b2dMinP.x)*b2dd3ratio/d3cylinsurfradius;
+		pnt2dlist[i].y = (pnt2dlist[i].y-b2dMinP.y)*b2dd3ratio/1.0;
+	}
+
+
+
+	std::vector<Handle_Geom2d_TrimmedCurve> seg2dlist;
+	Handle_Geom2d_TrimmedCurve tmptricurv;
+	seg2dlist.reserve(pnt2dlist.size()-1);
+	gp_Pnt2d pstart, pend;
+	for (size_t i=0; i<pnt2dlist.size()-1; ++i ) {
+		pstart.SetX(pnt2dlist[i].x);
+		pstart.SetY(pnt2dlist[i].y);
+		if ( pnt2dlist[i].gid!=pnt2dlist[i+1].gid ) 
+			continue;
+		pend.SetX(pnt2dlist[i+1].x);
+		pend.SetY(pnt2dlist[i+1].y);
+		tmptricurv = GCE2d_MakeSegment(pstart,pend);
+		//tmptricurv->
+		if ( (pstart.X()-pend.X())*(pstart.X()-pend.X())+(pstart.Y()-pend.Y())*(pstart.Y()-pend.Y()) <0.00000001 ) {
+			printf("Bad segment!\n");
+			continue;
+		}
+			
+		seg2dlist.push_back(tmptricurv);
+	}
+
+	Handle(Geom_Plane) ffontplanegeomh = new Geom_Plane(gp_Ax3());
+	for (size_t i=0; i<seg2dlist.size(); ++i ) {
+		TopoDS_Edge tmplineedge = BRepLib_MakeEdge(seg2dlist[i],ffontplanegeomh);
+		DrawUtil::DrawCurve(myAISContext, tmplineedge, Quantity_NOC_BLACK, Standard_True);
+	}
+
+
+
+	// d3 reference cylindrical surface
+	Handle(Geom_Surface) d3cylinsurfgeom = new Geom_CylindricalSurface( gp_Ax3(),d3cylinsurfradius);
+	TopoDS_Face d3cylintopoface = BRepLib_MakeFace(d3cylinsurfgeom,0,d3cylinU,0,d3cylinheight,precision);
+	DrawUtil::DrawSurface(myAISContext,d3cylintopoface,Quantity_NOC_YELLOW3,Standard_True);
+
+	for (size_t i=0; i<seg2dlist.size(); ++i ) {
+		TopoDS_Edge tmplineedge = BRepLib_MakeEdge(seg2dlist[i],d3cylinsurfgeom);
+		DrawUtil::DrawCurve(myAISContext, tmplineedge, Quantity_NOC_BLACK, Standard_True);
+	}
 
 
 
